@@ -49,7 +49,7 @@ def upload_pdf():
         pdf_doc = fitz.open(pdf_path)
         raw_text = ""
         for page in pdf_doc:
-            raw_text += page.get_text("text") + "\n"
+            raw_text += page.get_text("html")
 
         return jsonify({"success": True, "raw_text": raw_text})
     except Exception as e:
