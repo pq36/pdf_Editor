@@ -1,0 +1,8 @@
+Flask
+Flask-CORS
+Werkzeug
+pdf2image
+pymupdf  # PyMuPDF for PDF text extraction
+Pillow  # Required for pdf2image
+WeasyPrint  # For HTML to PDF conversion (or use wkhtmltopdf)
+tinycss2  # Required by WeasyPrint

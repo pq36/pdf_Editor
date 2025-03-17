@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Editor</title>
+
+    <!-- TinyMCE -->
+    <script src="https://cdn.tiny.cloud/1/lwcxkmgqfzgvf4ivtti7zhqae519cb61n3ob80l3flbvubb9/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            width: 100%;
+            margin: 20px auto;
+            text-align: center;
+        }
+
+        h2 {
+            color: #333;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-label {
+            display: inline-block;
+            background: #007BFF;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .file-label:hover {
+            background: #0056b3;
+        }
+
+        button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 5px;
+            margin: 10px;
+        }
+
+        button:hover {
+            background: #218838;
+        }
+
+        .button-secondary {
+            background: #007BFF;
+        }
+
+        .button-secondary:hover {
+            background: #0056b3;
+        }
+
+        .editor-container {
+            margin-top: 20px;
+            text-align: left;
+        }
+    </style>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            tinymce.init({
+                selector: '#editor',
+                height: 500,
+                menubar: false,
+                plugins: 'lists link image code',
+                toolbar: 'undo redo | bold italic | alignleft aligncenter alignright | code',
+                setup: function (editor) {
+                    editor.on("init", function () {
+                        console.log("TinyMCE Loaded"); // Debugging log
+                    });
+                }
+            });
+        });
+
+        async function uploadPDF() {
+            let fileInput = document.getElementById("pdfFile");
+            if (!fileInput.files.length) {
+                alert("Please select a PDF file.");
+                return;
+            }
+
+            let formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+
+            try {
+                let response = await fetch("/upload", {
+                method: "POST",
+                headers: {
+                    "X-API-KEY": "lwcxkmgqfzgvf4ivtti7zhqae519cb61n3ob80l3flbvubb9"
+                },
+                body: formData
+            });
+
+                let data = await response.json();
+                if (data.success) {
+                    console.log("Raw text received:", data.raw_text); // Debugging log
+
+                    // Set content in TinyMCE editor
+                    if (tinymce.get("editor")) {
+                        tinymce.get("editor").setContent(data.raw_text);
+                    } else {
+                        console.error("TinyMCE editor not initialized.");
+                    }
+                } else {
+                    alert("Failed to process PDF. " + (data.error || ""));
+                }
+            } catch (error) {
+                console.error("Error uploading PDF:", error);
+                alert("An error occurred while uploading the PDF.");
+            }
+        }
+
+        function saveContent() {
+            let content = tinymce.get("editor").getContent();
+            document.getElementById("editor_content").value = content;
+        }
+
+        function downloadHtml() {
+            let content = tinymce.get("editor").getContent();  // Get TinyMCE content
+            let blob = new Blob([content], { type: "text/html" });  // Create a Blob
+            let a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = "edited_content.html";  // Set filename
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h2>PDF to HTML Converter</h2>
+
+        <!-- Upload PDF Form -->
+        <form id="uploadForm" enctype="multipart/form-data">
+            <label for="pdfFile" class="file-label">Choose PDF</label>
+            <input type="file" id="pdfFile" name="file" accept=".pdf" required>
+            <button type="button" onclick="uploadPDF()">Upload</button>
+        </form>
+
+        <div class="editor-container">
+            <h3>Editable Content</h3>
+            <textarea id="editor"></textarea>
+        </div>
+
+        <div>
+            <form action="/export" method="POST">
+                <input type="hidden" name="editor_content" id="editor_content">
+                <button type="submit" onclick="saveContent()">Export as PDF</button>
+            </form>
+
+            <button type="button" class="button-secondary" onclick="downloadHtml()">Download as HTML</button>
+        </div>
+    </div>
+</body>
+</html>
